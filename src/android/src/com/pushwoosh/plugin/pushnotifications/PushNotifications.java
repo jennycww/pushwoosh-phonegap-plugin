@@ -20,7 +20,6 @@ import android.webkit.JavascriptInterface;
 
 import com.pushwoosh.GDPRManager;
 import com.pushwoosh.Pushwoosh;
-import com.pushwoosh.RegisterForPushNotificationsResultData;
 import com.pushwoosh.badge.PushwooshBadge;
 import com.pushwoosh.exception.GetTagsException;
 import com.pushwoosh.exception.PushwooshException;
@@ -137,6 +136,10 @@ public class PushNotifications extends CordovaPlugin {
 
 		try {
 
+			if (sStartPushData != null) {
+				doOnPushOpened(sStartPushData.toString());
+			}
+
 			String appid = null;
 			if (params.has("appid")) {
 				appid = params.getString("appid");
@@ -163,6 +166,8 @@ public class PushNotifications extends CordovaPlugin {
 			PWLog.error(TAG, "Missing pw_appid parameter. Did you follow the guide correctly?", e);
 			return false;
 		}
+		
+		callbackContext.success();
 		return true;
 	}
 
@@ -176,11 +181,11 @@ public class PushNotifications extends CordovaPlugin {
 	private boolean registerDevice(JSONArray data, CallbackContext callbackContext) {
 		try {
 			callbackIds.put("registerDevice", callbackContext);
-			Pushwoosh.getInstance().registerForPushNotifications(new Callback<RegisterForPushNotificationsResultData, RegisterForPushNotificationsException>() {
+			Pushwoosh.getInstance().registerForPushNotifications(new Callback<String, RegisterForPushNotificationsException>() {
 				@Override
-				public void process(@NonNull final Result<RegisterForPushNotificationsResultData, RegisterForPushNotificationsException> result) {
-					if (result.isSuccess() && result.getData() != null) {
-						doOnRegistered(result.getData().getToken());
+				public void process(@NonNull final Result<String, RegisterForPushNotificationsException> result) {
+					if (result.isSuccess()) {
+						doOnRegistered(result.getData());
 					} else if (result.getException() != null) {
 						doOnRegisteredError(result.getException().getMessage());
 					}
@@ -579,14 +584,14 @@ public class PushNotifications extends CordovaPlugin {
 
 		return true;
 	}
-
-	@CordovaMethod
-	private boolean presentInboxUI(JSONArray data, final CallbackContext callbackContext) {
+    
+    @CordovaMethod
+    private boolean presentInboxUI(JSONArray data, final CallbackContext callbackContext) {
 		if (data.length() > 0)
-			InboxUiStyleManager.setStyle(this.cordova.getActivity(), data.optJSONObject(0));
-		this.cordova.getActivity().startActivity(new Intent(this.cordova.getActivity(), InboxActivity.class));
-		return true;
-	}
+			InboxUiStyleManager.setStyle(this.cordova.getActivity().getApplicationContext(), data.optJSONObject(0));
+        this.cordova.getActivity().startActivity(new Intent(this.cordova.getActivity(), InboxActivity.class));
+        return true;
+    }
 
 	@CordovaMethod
 	public boolean showGDPRConsentUI(JSONArray data, final CallbackContext callbackContext){

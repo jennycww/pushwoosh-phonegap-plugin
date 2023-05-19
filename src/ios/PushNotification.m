@@ -12,14 +12,17 @@
 
 #import "PushNotification.h"
 #import "PWLog.h"
-#import <PushwooshInboxUI/PushwooshInboxUI.h>
-#import <Pushwoosh/PWGDPRManager.h>
-#import <Pushwoosh/PWInAppManager.h>
+#import "PushwooshInboxUI.h"
+#import "PWGDPRManager.h"
+#import "PWInAppManager.h"
 #import "PWBackward.h"
+#import "Pushwoosh.h"
 
 #import "AppDelegate.h"
 
 #import <UserNotifications/UserNotifications.h>
+
+#import <Cordova/CDVViewController.h>
 
 #import <objc/runtime.h>
 
@@ -150,6 +153,13 @@ static PushNotification *pw_PushNotificationPlugin;
     
     _deviceReady = YES;
 	
+    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+	[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+	// RNMT-2095 - launchNotification is not being cleared after dispatch
+    // The launchNotification is only defined when the app is launched by a notification. 
+    // The startPushData is a private field with the data of launchNotification and it's created for the dispatch.
+    // This means that if the startPushData is null, the launchNotification hasn't been dispatched.
 	if (self.pushwoosh.launchNotification) {
         NSDictionary *notification = [self createNotificationDataForPush:self.pushwoosh.launchNotification onStart:YES];
         [self dispatchPushReceive:notification];
@@ -532,9 +542,20 @@ static PushNotification *pw_PushNotificationPlugin;
 - (UIColor *)colorFromInboxStyleDict:(NSDictionary *)dict forKey:(NSString *)key {
     NSObject *object = dict[key];
     if (object != nil && [object isKindOfClass:[NSString class]]) {
-        return [PWBackward colorFromColorString:(NSString *)object cordovaViewController:((CDVViewController *)self.viewController)];
+        // As colorFromColorString method can't be available on shell, it was replaced for the default background color defined as a preference
+        //return [((CDVViewController *)self.viewController) colorFromColorString:(NSString *)object];
+        NSString *backgroundColor = [self.commandDelegate.settings objectForKey:@"BackgroundColor"];
+        return backgroundColor ? [PushNotification colorFromHexString:backgroundColor] : nil;
     }
     return nil;
+}
+
++ (UIColor *)colorFromHexString:(NSString *)hexString {
+    unsigned rgbValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:hexString];
+    [scanner setScanLocation:1]; // bypass '#' character
+    [scanner scanHexInt:&rgbValue];
+    return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
 }
 
 - (NSString *)stringFromInboxStyleDict:(NSDictionary *)dict forKey:(NSString *)key {

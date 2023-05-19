@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="pushwoosh-cordova-plugin" version="8.3.13">
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android" id="pushwoosh-cordova-plugin" version="8.3.3-OS">
 
 	<name>Pushwoosh</name>
 
@@ -26,10 +26,9 @@
 
 	<!-- android -->
 	<platform name="android">
-        <config-file target="config.xml" parent="/*">
-            <preference name="GradlePluginGoogleServicesEnabled" value="true" />
-            <preference name="GradlePluginGoogleServicesVersion" value="4.3.10" />
-        </config-file>
+		<hook type="before_plugin_install" src="hooks/outsystems/handle_google_services.js" />
+		<hook type="before_plugin_install" src="hooks/outsystems/handle_agconnect_services.js" />
+		<hook type="after_plugin_install" src="hooks/outsystems/google_services_cleanup.js" />
 
 		<config-file target="AndroidManifest.xml" parent="/manifest/application">
 			<meta-data android:name="com.pushwoosh.log_level" android:value="$LOG_LEVEL" />
@@ -39,11 +38,11 @@
 
 			<meta-data android:name="com.pushwoosh.internal.plugin_provider"	android:value="com.pushwoosh.plugin.internal.PhonegapPluginProvider" />
             
-            <service android:name="com.pushwoosh.plugin.pushnotifications.CustomFirebaseMessagingService" android:exported="false">
-                <intent-filter>
-                    <action android:name="com.google.firebase.MESSAGING_EVENT"/>
-                </intent-filter>
-            </service>
+<!--            <service android:name="com.pushwoosh.plugin.pushnotifications.CustomFirebaseMessagingService" android:exported="false">-->
+<!--                <intent-filter>-->
+<!--                    <action android:name="com.google.firebase.MESSAGING_EVENT"/>-->
+<!--                </intent-filter>-->
+<!--            </service>-->
 		</config-file>
 
 		<config-file target="res/xml/config.xml" parent="/*">
@@ -67,22 +66,8 @@
 		<source-file src="src/android/src/com/pushwoosh/plugin/internal/PhonegapPluginProvider.java"
 			target-dir="src/com/pushwoosh/plugin/internal" />
 
-        <framework src="build-extras-pushwoosh.gradle" custom="true" type="gradleReference" />
-
-		<framework src="com.android.support:support-v4:27.+" />
-        <framework src="com.android.support:appcompat-v7:27.+" />
-        <framework src="com.android.support:recyclerview-v7:27.+" />
-        <framework src="com.android.support:design:27.+" />
-        <framework src="com.android.support.constraint:constraint-layout:1.0.2" />
-        <framework src="com.github.bumptech.glide:glide:4.7.1" />
-        <framework src="org.jetbrains.kotlin:kotlin-stdlib-jre7:1.1.60" />
-        <framework src="com.pushwoosh:pushwoosh:6.6.11"/>
-		<framework src="com.pushwoosh:pushwoosh-amazon:6.6.11"/>
-        <framework src="com.pushwoosh:pushwoosh-firebase:6.6.11"/>
-		<framework src="com.pushwoosh:pushwoosh-badge:6.6.11"/>
-        <framework src="com.pushwoosh:pushwoosh-inbox:6.6.11"/>
-        <framework src="com.pushwoosh:pushwoosh-inbox-ui:6.6.11"/>
-		<framework src="com.pushwoosh:pushwoosh-huawei:6.6.11"/>
+		<framework src="libs/android/googleservices-build.gradle" custom="true" type="gradleReference" />
+		<dependency id="cordova-androidx-build" url="https://github.com/Pushwoosh/cordova-androidx-build.git#1.1-OS" />
 	</platform>
 
 	<!-- ios -->
@@ -97,12 +82,6 @@
 				<param name="ios-package" value="PushNotification"/>
 			</feature>
 		</config-file>
-        
-        <config-file target="*-Info.plist" parent="UIBackgroundModes">
-          <array>
-            <string>remote-notification</string>
-          </array>
-        </config-file>
 
 		<config-file target="*-Info.plist" parent="Pushwoosh_LOG_LEVEL">
 			<string>$LOG_LEVEL</string>
@@ -118,22 +97,23 @@
 		<config-file parent="aps-environment" target="*/Entitlements-Release.plist">
 			<string>production</string>
 		</config-file>
-        
-        <podspec>
-            <config>
-                <source url="https://github.com/CocoaPods/Specs.git"/>
-            </config>
-            <pods use-frameworks="true">
-                <pod name="PushwooshXCFramework" spec="6.4.5" />
-                <pod name="PushwooshInboxUIXCFramework" spec="6.1.1" />
-            </pods>
-        </podspec>
 
-		<header-file src="src/ios/PushNotification.h" />
-		<source-file src="src/ios/PushNotification.m" />
-        <header-file src="src/ios/PWBackward.h" />
-        <source-file src="src/ios/PWBackward.m" />
-        <header-file src="src/ios/PWLog.h" />
+		<header-file src="src/ios/PushNotification.h" target-dir="ios"/>
+		<source-file src="src/ios/PushNotification.m" target-dir="ios"/>
+        <header-file src="src/ios/PWBackward.h" target-dir="ios"/>
+        <source-file src="src/ios/PWBackward.m" target-dir="ios"/>
+		<header-file src="src/ios/Pushwoosh.framework/Versions/A/Headers/PushNotificationManager.h" target-dir="ios"/>
+		<header-file src="src/ios/Pushwoosh.framework/Versions/A/Headers/PWInAppManager.h" target-dir="ios"/>
+		<header-file src="src/ios/Pushwoosh.framework/Versions/A/Headers/PWGDPRManager.h" target-dir="ios"/>
+		<header-file src="src/ios/PWLog.h" target-dir="ios"/>
+        <header-file src="src/ios/Pushwoosh.framework/Versions/A/Headers/Pushwoosh.h" target-dir="ios"/>
+        <header-file src="src/ios/PushwooshInboxUI.framework/Versions/A/Headers/PushwooshInboxUI.h" target-dir="ios"/>
+        <header-file src="src/ios/PushwooshInboxUI.framework/Versions/A/Headers/PWIInboxStyle.h" target-dir="ios"/>
+        <header-file src="src/ios/PushwooshInboxUI.framework/Versions/A/Headers/PWIInboxUI.h" target-dir="ios"/>
+        
+		<source-file src="src/ios/Pushwoosh.framework/Versions/A/libPushwoosh.a" framework="true"/>
+        <source-file src="src/ios/PushwooshInboxUI.framework/Versions/A/libPushwooshInboxUI.a" framework="true"/>
+        <resource-file src="src/ios/PushwooshInboxBundle.bundle" />
 	</platform>
 
 	<!-- wp8 -->
